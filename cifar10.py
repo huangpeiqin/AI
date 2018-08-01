@@ -467,20 +467,23 @@ def train(total_loss, global_step):
     apply_gradient_op = opt.apply_gradients(grads, global_step=global_step) #应用梯度grads
 
     # Add histograms for trainable variables.
+    #添加可训练变量的直方图
     for var in tf.trainable_variables():
         tf.summary.histogram(var.op.name, var)
 
     # Add histograms for gradients.
+    #添加梯度变化直方图。
     for grad, var in grads:
         if grad is not None:
             tf.summary.histogram(var.op.name + '/gradients', grad)
 
     # Track the moving averages of all trainable variables.
-    variable_averages = tf.train.ExponentialMovingAverage(
+    #跟踪所有可训练变量的滑动平均值。
+    variable_averages = tf.train.ExponentialMovingAverage(  #采用滑动平均的方法更新参数，衰减速率（MOVING_AVERAGE_DECAY）用于控制模型的更新速度
         MOVING_AVERAGE_DECAY, global_step)
     variables_averages_op = variable_averages.apply(tf.trainable_variables())
 
-    with tf.control_dependencies([apply_gradient_op, variables_averages_op]):
+    with tf.control_dependencies([apply_gradient_op, variables_averages_op]):   ##控制计算流图
         train_op = tf.no_op(name='train')
 
     return train_op
