@@ -125,7 +125,6 @@ def train():
             while not mon_sess.should_stop():
                 mon_sess.run(train_op)
 
-
 def main(argv=None):  # pylint: disable=unused-argument
     # 下载和解压缩，函数位于cifar10.py
     # 先查找本级目录是否存在数据集文件，若不存在，则在线下载

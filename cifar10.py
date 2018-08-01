@@ -59,8 +59,8 @@ tf.app.flags.DEFINE_boolean('use_fp16', False,
 # Global constants describing the CIFAR-10 data set.
 IMAGE_SIZE = cifar10_input.IMAGE_SIZE
 NUM_CLASSES = cifar10_input.NUM_CLASSES
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN  #训练量
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL    #测试量
 
 
 # Constants describing the training process.
@@ -409,7 +409,11 @@ def _add_loss_summaries(total_loss):
     Returns:
       loss_averages_op: op for generating moving averages of losses.
     """
+    #添加CIFAR-10模型中的loss摘要。
+    #生成所有loss的滑动平均值和相关摘要，以便可视化网络性能。
+
     # Compute the moving average of all individual losses and the total loss.
+    #计算所有单个loss和总loss的移动平均值。
     loss_averages = tf.train.ExponentialMovingAverage(0.9, name='avg')
     losses = tf.get_collection('losses')
     loss_averages_op = loss_averages.apply(losses + [total_loss])
@@ -439,27 +443,28 @@ def train(total_loss, global_step):
       train_op: op for training.
     """
     # Variables that affect learning rate.
-    num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
-    decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
+    num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size   #训练量/每一撮的大小 = 每一批次分的撮数
+    decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)    #衰减步长
 
     # Decay the learning rate exponentially based on the number of steps.
-    lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
-                                    global_step,
-                                    decay_steps,
-                                    LEARNING_RATE_DECAY_FACTOR,
-                                    staircase=True)
-    tf.summary.scalar('learning_rate', lr)
+    #指数衰减函数
+    lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,  #初始学习率
+                                    global_step,            #全局 step 数
+                                    decay_steps,            #学习率更新的 step 周期，即每隔多少 step 更新一次 learning rate 的值
+                                    LEARNING_RATE_DECAY_FACTOR, #指数衰减参数
+                                    staircase=True)        #是否阶梯性更新学习率
+    tf.summary.scalar('learning_rate', lr)          #用来显示标量信息
 
     # Generate moving averages of all losses and associated summaries.
-    loss_averages_op = _add_loss_summaries(total_loss)
+    loss_averages_op = _add_loss_summaries(total_loss)  #添加CIFAR-10模型中的loss摘要，包含滑动平均值。
 
     # Compute gradients.
-    with tf.control_dependencies([loss_averages_op]):
-        opt = tf.train.GradientDescentOptimizer(lr)
-        grads = opt.compute_gradients(total_loss)
+    with tf.control_dependencies([loss_averages_op]):   #控制计算流图，每次运行opt和grads前，先求得（更新）loss_averages_op
+        opt = tf.train.GradientDescentOptimizer(lr) #实现梯度下降算法的优化器，创建一个梯度下降优化器对象 ，lr为要使用的学习率
+        grads = opt.compute_gradients(total_loss)   #计算梯度
 
     # Apply gradients.
-    apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
+    apply_gradient_op = opt.apply_gradients(grads, global_step=global_step) #应用梯度grads
 
     # Add histograms for trainable variables.
     for var in tf.trainable_variables():
