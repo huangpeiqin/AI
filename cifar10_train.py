@@ -87,12 +87,12 @@ def train():
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
         # 训练建立好的模型
-        train_op = cifar10.train(loss, global_step)
+        train_op = cifar10.train(loss, global_step) #训练模型，内含学习率，损失函数，梯度衰减
 
-        class _LoggerHook(tf.train.SessionRunHook):
+        class _LoggerHook(tf.train.SessionRunHook): #tf.train.SessionRunHook类似于 Session 的一个处理初始化, 恢复和 hooks 的功能
             """Logs loss and runtime."""
 
-            def begin(self):
+            def begin(self):        #初始化（step和时间）
                 self._step = -1
                 self._start_time = time.time()
 
@@ -100,7 +100,7 @@ def train():
                 self._step += 1
                 return tf.train.SessionRunArgs(loss)  # Asks for loss value.
 
-            def after_run(self, run_context, run_values):
+            def after_run(self, run_context, run_values):   #每运行一定轮数，打印出一些信息（运行时间，次数，loss值，每秒次数，每秒batch数）
                 if self._step % FLAGS.log_frequency == 0:
                     current_time = time.time()
                     duration = current_time - self._start_time
@@ -116,13 +116,13 @@ def train():
                                         examples_per_sec, sec_per_batch))
 
         with tf.train.MonitoredTrainingSession(
-            checkpoint_dir=FLAGS.train_dir,
-            hooks=[tf.train.StopAtStepHook(last_step=FLAGS.max_steps),
-                   tf.train.NanTensorHook(loss),
-                   _LoggerHook()],
-            config=tf.ConfigProto(
+            checkpoint_dir=FLAGS.train_dir,             #路径
+            hooks=[tf.train.StopAtStepHook(last_step=FLAGS.max_steps), #总轮数
+                   tf.train.NanTensorHook(loss),        #监控loss，如果loss为NaN则停止训练
+                   _LoggerHook()],                      #初始化
+            config=tf.ConfigProto(                  #记录设备指派情况
                 log_device_placement=FLAGS.log_device_placement)) as mon_sess:
-            while not mon_sess.should_stop():
+            while not mon_sess.should_stop():       #循环运行run()
                 mon_sess.run(train_op)
 
 def main(argv=None):  # pylint: disable=unused-argument
